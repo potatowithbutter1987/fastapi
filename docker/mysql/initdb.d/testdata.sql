@@ -1,0 +1,20 @@
+INSERT INTO vehicle_list
+(
+    maker_id,
+    car_id,
+    price,
+    model_year,
+    mileage,
+    unrunnable,
+    displacement,
+    vehicle_inspection_expiry,
+    car_name
+)
+VALUES
+(1,1,900,2000,10000,false,100,10,"テスト車両1"),
+(2,2,902,2002,10002,true,102,12,"てすと車両2"),
+(3,3,903,2003,10003,true,103,13,"てすと車両3"),
+(1,1,900,2000,10000,false,104,14,"テスト車両4"),
+(1,2,900,2000,10000,false,104,14,"テスト車両5"),
+(1,3,900,2000,10000,false,104,14,"テスト車両6"),
+(1,4,900,2000,10000,false,104,14,"テスト車両7");
