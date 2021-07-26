@@ -39,6 +39,8 @@ def http_add_log(request: Request, call_next):
 # 車両一覧 (ページネーション有)
 @app.get("/api/vehicle-list")
 def vehicle_list(
+    limit: int,
+    offset: int,
     maker_id: Optional[int] = None,
     car_id: Optional[int] = None,
     price: Optional[int] = None,
@@ -46,12 +48,11 @@ def vehicle_list(
     mileage: Optional[int] = None,
     unrunnable: Optional[bool] = False,
     displacement: Optional[int] = None,
-    vehicle_inspection_expiry: Optional[int] = None,
-    limit: Optional[int] = 1,
-    offset: Optional[int] = 0,
+    vehicle_inspection_expiry: Optional[int] = None
 ):
-
     return get_vehicle_list(
+        limit=limit,
+        offset=offset,
         maker_id=maker_id,
         car_id=car_id,
         price=price,
@@ -59,38 +60,11 @@ def vehicle_list(
         mileage=mileage,
         unrunnable=unrunnable,
         displacement=displacement,
-        vehicle_inspection_expiry=vehicle_inspection_expiry,
-        limit=limit,
-        offset=offset
+        vehicle_inspection_expiry=vehicle_inspection_expiry
     )
 
+
 # グラフ用データ(走行距離別、1万km単位で集計、平均値)
-
-
-# @app.get("/api/vehicle-graph")
-# def vehicle_list(
-#     maker_id: int, car_id: int, price: int, model_year: str,
-#     mileage: int, unrunnable: bool, displacement: int,
-#     vehicle_inspection_expiry: int
-# ):
-#     users = session.query(UserTable).all()
-#     return users
-
-
-# @app.get("/users")
-# def read_users():
-#     users = session.query(UserTable).all()
-#     time.sleep(3)
-#     return users
-
-
-# @app.get("/users/{user_id}")
-# def read_user(user_id: int):
-#     user = session.query(UserTable).\
-#         filter(UserTable.id == user_id).first()
-#     return user
-
-
-# @app.get("/items/{item_id}")
-# def read_item(item_id: int, q: str = None):
-#     return {"item_id": item_id, "q": q}
+@app.get("/api/vehicle-graph")
+def vehicle_graph(car_id: int):
+    return get_vehicle_graph(car_id=car_id)

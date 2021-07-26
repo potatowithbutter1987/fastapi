@@ -6,12 +6,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+# 車両一覧取得
 def get_vehicle_list(**kwargs):
     limit = kwargs.get('limit')
     offset = kwargs.get('offset')
     binds = {'limit': limit, 'offset': offset}
     vehicle_list = []
     result = {'search_result': [], 'paging': 0, 'total_search_count': 0}
+
+    logger.info("start get_vehicle_list")
 
     try:
         vehicle_list = get_search_result(binds, **kwargs)
@@ -26,10 +29,28 @@ def get_vehicle_list(**kwargs):
     except Exception as e:
         raise e
 
+    logger.info("end get_vehicle_list")
+
     return result
 
 
-# 車両一覧取得
+# 強行距離別 廃車買取取得 グラフ取得
+def get_vehicle_graph(car_id):
+    result = []
+    binds = {'car_id': car_id}
+    logger.info("start get_vehicle_graph")
+
+    try:
+        graph_result = get_graph_result(binds)
+    except Exception as e:
+        raise e
+
+    logger.info("end get_vehicle_graph")
+
+    return graph_result
+
+
+# 車両一覧 検索結果取得
 def get_search_result(binds, **kwargs):
     vehicle_list = []
 
@@ -43,6 +64,23 @@ def get_search_result(binds, **kwargs):
         vehicle_list.append(row)
 
     return vehicle_list
+
+
+def get_graph_result(binds):
+    graph_data = []
+
+    # グラフ用データ(走行距離別、1万km単位で集計、平均値)
+    # 走行距離別の廃車買取価格グラフ
+    # 	距離：1万キロ単位で、割ってグループバイ
+    # 		平均値を計算して返す。
+
+    search_query = text(
+        'SELECT price,mileage  FROM vehicle_list WHERE car_id = :car_id')
+
+    for row in session.execute(search_query, binds):
+        graph_data.append(row)
+
+    return graph_data
 
 
 # トータルカウント取得
@@ -94,9 +132,9 @@ def has_kwarg(data):
     return data is not None
 
 
-# def main():
-#     Base.metadata.create_all(bind=ENGINE)
+def main():
+    Base.metadata.create_all(bind=ENGINE)
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
