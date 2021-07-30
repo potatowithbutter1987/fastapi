@@ -3,6 +3,8 @@ from sqlalchemy.sql import text
 from drivers.mysql import session, Base, ENGINE
 import math
 import logging
+import sys
+sys.path.append('../')
 logger = logging.getLogger(__name__)
 
 
@@ -22,7 +24,7 @@ def get_vehicle_list(**kwargs):
         if has_not_data(vehicle_list):
             return []
 
-        result['search_result'].append(vehicle_list)
+        result['search_result'] = vehicle_list
         result['total_search_count'] = get_total_search_count(binds, **kwargs)
         result['paging'] = get_paging(limit, result['total_search_count'])
 
@@ -35,19 +37,21 @@ def get_vehicle_list(**kwargs):
 
 
 # 強行距離別 廃車買取取得 グラフ取得
-def get_vehicle_graph(car_id):
-    result = []
-    binds = {'car_id': car_id}
+def get_vehicle_graph(**kwargs):
+    binds = {}
+    result = {'search_result': []}
     logger.info("start get_vehicle_graph")
 
     try:
-        graph_result = get_graph_result(binds)
+        graph_result = get_graph_result(binds, **kwargs)
     except Exception as e:
         raise e
 
+    result['search_result'] = graph_result
+
     logger.info("end get_vehicle_graph")
 
-    return graph_result
+    return result
 
 
 # 車両一覧 検索結果取得
@@ -66,16 +70,36 @@ def get_search_result(binds, **kwargs):
     return vehicle_list
 
 
-def get_graph_result(binds):
+def get_graph_result(binds, **kwargs):
     graph_data = []
 
-    # グラフ用データ(走行距離別、1万km単位で集計、平均値)
-    # 走行距離別の廃車買取価格グラフ
-    # 	距離：1万キロ単位で、割ってグループバイ
-    # 		平均値を計算して返す。
+    query_select_price = "IFNULL(FORMAT(avg((price / (mileage / 10000))) / 1000, 1), 0) as 'price'"
+    query_where = create_query_where_for_graph(binds, **kwargs)
 
     search_query = text(
-        'SELECT price,mileage  FROM vehicle_list WHERE car_id = :car_id')
+        "SELECT '32' as 'mileage',  " + query_select_price +
+        "FROM vehicle_list" + query_where + " 280000 <= mileage\
+            UNION\
+        SELECT '28' as 'mileage',  " + query_select_price +
+        "FROM vehicle_list" + query_where + " 280000 > mileage AND 240000 <= mileage\
+            UNION\
+        SELECT '24' as 'mileage',  " + query_select_price +
+        "FROM vehicle_list" + query_where + " 240000 > mileage AND 200000 <= mileage\
+            UNION\
+        SELECT '20' as 'mileage',  " + query_select_price +
+        "FROM vehicle_list" + query_where + " 200000 > mileage AND 160000 <= mileage\
+            UNION\
+        SELECT '16' as 'mileage',  " + query_select_price +
+        "FROM vehicle_list" + query_where + " 160000 > mileage AND 120000 <= mileage\
+            UNION\
+        SELECT '12' as 'mileage',  " + query_select_price +
+        "FROM vehicle_list" + query_where + " 120000 > mileage AND 80000 <= mileage\
+            UNION\
+        SELECT '8' as 'mileage', " + query_select_price +
+        "FROM vehicle_list" + query_where + " 80000 > mileage AND 40000 <= mileage\
+            UNION\
+        SELECT '4' as 'mileage',  " + query_select_price +
+        "FROM vehicle_list" + query_where + " 40000 > mileage")
 
     for row in session.execute(search_query, binds):
         graph_data.append(row)
@@ -120,6 +144,26 @@ def create_query_where(binds, **kwargs):
 
     if not query_where == "":
         query_where = 'WHERE ' + query_where
+
+    return query_where
+
+
+def create_query_where_for_graph(binds, **kwargs):
+    query_where = ""
+
+    for key, value in kwargs.items():
+        if has_kwarg(kwargs.get(key)):
+            if not query_where == "":
+                query_where += 'and '
+                query_where += key + ' = :' + key + ' '
+            else:
+                query_where += key + ' = :' + key + ' '
+            binds.update({key: kwargs.get(key)})
+
+    if not query_where == "":
+        query_where = ' WHERE ' + query_where + ' AND '
+    else:
+        query_where = ' WHERE '
 
     return query_where
 
